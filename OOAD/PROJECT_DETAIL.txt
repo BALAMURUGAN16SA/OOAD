@@ -1,0 +1,14 @@
+we are doing logistic management system using react and python
+the usecases we are using are
+"sending product" by the user to the warehouse
+"receiving products" to the inventory, where we check the type of the product, quality and quantity
+then we approve the product for sending it to "storing inventory" usecase, where we label the products based on if its "e-prod or automobile or clothes or staples" and and organize them and , we pack them with the from, to address and date of delivery and store them in any of 10  inventoris in our warehouse(1 for each county)
+then we enter "monitroing inventory" which is basically graph and chart to visualize our inventory and provide some statistical data about the products we have
+then after storing in inventory, we assign the date, time and mode of transport
+finally after reaching destination we enter usecase "notify" customer 
+
+
+now we need to simulate this using react python and flask
+especially we need to use oop, databse
+
+give proper sketch on using all the usecases and simulating all things i mentioned..

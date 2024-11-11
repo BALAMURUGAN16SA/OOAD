@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #343a40;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .navbar a {
+            color: white;
+        }
+        .sidebar {
+            height: 100vh;
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            z-index: 500;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        .sidebar a:hover {
+            background-color: #007bff;
+        }
+        .content {
+            margin-left: 240px;
+            margin-top: 70px;
+            padding: 20px;
+        }
+        .card {
+            margin-bottom: 30px;
+            transition: transform 0.3s ease-in-out;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+        .card-body {
+            padding: 20px;
+            text-align: center;
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .card-text {
+            font-size: 16px;
+            color: #777;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .col-md-4 {
+            max-width: 30%;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 5px;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            border-radius: 5px;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            border-radius: 5px;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .table th, .table td {
+            vertical-align: middle;
+            padding: 12px;
+        }
+        .table th {
+            background-color: #007bff;
+            color: white;
+        }
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        .table img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .mt-4 {
+            margin-top: 40px;
+        }
+        .form-check {
+            margin-top: 20px;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+            border-radius: 5px;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        .approval-section {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+        .approval-section label {
+            font-size: 16px;
+        }
+        .approval-section input {
+            margin-right: 10px;
+        }
+        form {
+        background-color: #f8f9fa;
+        }
+        .form-check-input {
+            margin-top: 6px;
+        }
+        .form-check-label {
+            font-size: 1.1rem;
+        }
+        .btn {
+            font-size: 1.2rem;
+            padding: 12px 20px;
+        }
+        .btn:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <a class="navbar-brand" href="#">Admin Dashboard</a>
+    </nav>
+
+    <!-- Side Navbar -->
+    <div class="sidebar">
+        <a href="#"><i class="fas fa-home"></i> Home</a>
+        <a href="#"><i class="fas fa-truck"></i> Shipments</a>
+        <a href="#"><i class="fas fa-box"></i> Inventory</a>
+        <a href="#"><i class="fas fa-chart-line"></i> Reports</a>
+        <a href="#"><i class="fas fa-cogs"></i> Settings</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <div class="container">
+            <h1 class="my-4 text-center text-primary">Order Details</h1>
+
+            <!-- Order Details Card -->
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Order ID: {{ order.order_id }}</h4>
+                    <p><strong>From:</strong> {{ order.from_location }}</p>
+                    <p><strong>To:</strong> {{ order.to_location }}</p>
+                    <p><strong>Status:</strong> {{ order.status }}</p>
+                </div>
+            </div>
+
+            <!-- Order Items Table -->
+            <h2 class="my-4 text-center text-info">Order Items</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Product Name</th>
+                        <th scope="col">Product Type</th>
+                        <th scope="col">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in results %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.product_type }}</td>
+                        <td>{{ item.quantity }}</td>
+                    </tr>
+                    
+                    {% endfor %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="d-flex justify-content-between">
+                                <form method="POST" action="{{ url_for('order_details', order_id=order.order_id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">Unload</button>
+                                </form>
+                                <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Orders</a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Graph Section -->
+            {% if graph_url %}
+                <div class="text-center mt-4">
+                    <h5 class="my-4 text-success">Product Category Distribution:</h5>
+                    <img src="data:image/png;base64,{{ graph_url }}" alt="Bar Chart" class="img-fluid">
+                </div>
+                <div class="text-center mt-4">
+                    <form method="POST" action="{{ url_for('order_details', order_id=order.order_id) }}">
+                        <button type="submit" class="btn btn-success">Assess Product</button>
+                    </form>
+                </div>
+            {% else %}
+                <p class="text-center mt-4">No Unloaded product data available.</p>
+            {% endif %}
+
+            <!-- Product Damage Assessment -->
+            {% if damage_data %}
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title text-warning">Product Damage Assessment</h2>
+                        <table class="table table-bordered mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Total Quantity</th>
+                                    <th>Damaged Quantity</th>
+                                    <th>Damaged (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for damage in damage_data %}
+                                <tr>
+                                    <td>{{ damage.product_name }}</td>
+                                    <td>{{ damage.total_quantity }}</td>
+                                    <td>{{ damage.damaged_quantity }}</td>
+                                    <td>{{ damage.damaged_percent }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('order_details', order_id=order.order_id) }}" class="p-4 rounded shadow-sm bg-light">
+                    <div class="mt-3">
+                        <label class="d-block font-weight-bold mb-2">Do you want to approve the product assessment?</label>
+                        <div class="form-check form-check-inline">
+                            <input type="radio" id="yes" name="approve_assessment" value="yes" class="form-check-input" {% if order['status'] in ['Approved', 'Disapproved'] %}disabled{% endif %}>
+                            <label for="yes" class="form-check-label">Yes</label>
+                        </div>
+                        
+                        <div class="form-check form-check-inline">
+                            <input type="radio" id="no" name="approve_assessment" value="no" class="form-check-input" {% if order['status'] in ['Approved', 'Disapproved'] %}disabled{% endif %}>
+                            <label for="no" class="form-check-label">No</label>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success btn-lg w-100" {% if order['status'] in ['Approved', 'Disapproved'] %}disabled{% endif %}>Submit</button>
+                    </div>
+                </form>
+                
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
