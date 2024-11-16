@@ -191,7 +191,8 @@
                             <p class="card-text"><strong>From:</strong> {{ order.from_location }}</p>
                             <p class="card-text"><strong>To:</strong> {{ order.to_location }}</p>
                             <p class="card-text"><strong>Delivery Status:</strong> {{ order.status }}</p>
-                            <a href="{{ url_for('order_details', order_id=order.order_id) }}" class="btn btn-primary">View Order Details</a>
+                            <p class="">{{ order.DELIVERY_DATE }}</p>
+                            <a href="{{ url_for('location', floc = order.from_location, tloc=order.to_location, date=order.DELIVERY_DATE) }}" class="btn btn-primary">Assign Vehicles</a>
                         </div>
                     </div>
                 </div>

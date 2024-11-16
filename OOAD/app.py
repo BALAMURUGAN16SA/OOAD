@@ -13,7 +13,7 @@ db_config = {
     'host': 'localhost',
     'user': 'root',
     'password': '',
-    'database': 'OOAD'
+    'database': 'OOADP'
 }
 
 
@@ -25,10 +25,11 @@ def order_details(order_id):
     cursor.execute("SELECT * FROM ORDERS WHERE order_id = %s", (order_id,))
     order = cursor.fetchone()
 
-    if request.method == 'POST' and order['status'] == 'Pending':
+    if request.method == 'POST' and order['status'].strip() == 'Pending':
         cursor.execute("UPDATE ORDERS SET status = %s WHERE order_id = %s", ('Unloaded', order_id,))
         connection.commit()
         return redirect(url_for('order_details', order_id=order_id))
+
     if request.method == 'POST' and order['status'] == 'Unloaded':
         cursor.execute("UPDATE ORDERS SET status = %s WHERE order_id = %s", ('Assessed', order_id,))
         connection.commit()

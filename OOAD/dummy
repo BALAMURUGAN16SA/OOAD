@@ -1,0 +1,88 @@
+from flask import Flask, render_template, redirect, url_for, request
+import MySQLdb
+
+app = Flask(__name__)
+
+# Connect to your MariaDB database
+def get_db_connection():
+    connection = MySQLdb.connect(
+        host='localhost',
+        user='your_user',
+        password='your_password',
+        database='OOADP'
+    )
+    return connection
+
+@app.route('/order', methods=['GET', 'POST'])
+def inventory():
+    if request.method == 'POST':
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        select_query = """
+        SELECT 
+            CUSTOMERS.CUSTOMER_ID, 
+            ORDERS.ORDER_ID, 
+            ORDERS.FROM_LOCATION, 
+            ORDERS.TO_LOCATION, 
+            ORDERS.MODE_OF_TRANSPORT, 
+            ORDERS.ORDER_DATE, 
+            ORDERS.DELIVERY_DATE, 
+            FINAL_PRODUCT.PRODUCT_ID, 
+            FINAL_PRODUCT.PRODUCT_NAME, 
+            FINAL_PRODUCT.TOTAL_QUANTITY, 
+            FINAL_PRODUCT.DAMAGED_QUANTITY, 
+            ORDERS.COST
+        FROM CUSTOMERS
+        JOIN ORDERS ON CUSTOMERS.CUSTOMER_ID = ORDERS.CUSTOMER_ID
+        JOIN FINAL_PRODUCT ON ORDERS.ORDER_ID = FINAL_PRODUCT.ORDER_ID
+        JOIN PRODUCTS ON FINAL_PRODUCT.PRODUCT_ID = PRODUCTS.PRODUCT_ID
+        WHERE ORDERS.STATUS = 'Approved';
+        """
+        
+        cursor.execute(select_query)
+        orders_data = cursor.fetchall()
+
+        for order in orders_data:
+            customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost = order
+
+            insert_query = """
+            INSERT INTO {table_name} (
+                CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION,
+                MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, 
+                PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """
+            
+            if to_location == 'USA':
+                cursor.execute(insert_query.format(table_name='USA_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'UK':
+                cursor.execute(insert_query.format(table_name='UK_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'France':
+                cursor.execute(insert_query.format(table_name='FRANCE_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Germany':
+                cursor.execute(insert_query.format(table_name='GERMANY_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Russia':
+                cursor.execute(insert_query.format(table_name='RUSSIA_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Chennai':
+                cursor.execute(insert_query.format(table_name='CHENNAI_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Mumbai':
+                cursor.execute(insert_query.format(table_name='MUMBAI_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Bangalore':
+                cursor.execute(insert_query.format(table_name='BANGALORE_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Delhi':
+                cursor.execute(insert_query.format(table_name='DELHI_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+            elif to_location == 'Kolkata':
+                cursor.execute(insert_query.format(table_name='KOLKATA_INV'), (customer_id, order_id, from_location, to_location, mode_of_transport, order_date, delivery_date, product_id, product_name, total_quantity, damaged_quantity, cost))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        return redirect(url_for('inventory'))
+
+    return render_template('inventory.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
