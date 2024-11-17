@@ -43,12 +43,12 @@ class Meth:
     def data(self, order_id):
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM ORDER_ITEMS WHERE order_id = %s", (order_id,))
+        cursor.execute("SELECT * FROM ORDERITEMS WHERE order_id = %s", (order_id,))
         order_items = cursor.fetchall()
 
         query = """
         SELECT *
-        FROM ORDER_ITEMS oi
+        FROM ORDERITEMS oi
         JOIN PRODUCTS p ON oi.product_id = p.product_id
         WHERE oi.order_id = %s
         """
@@ -56,8 +56,8 @@ class Meth:
         results = cursor.fetchall()
 
         query = """
-        SELECT p.product_name, p.product_id, p.product_type, oi.quantity AS total_quantity
-        FROM ORDER_ITEMS oi
+        SELECT p.product_name, p.product_id, p.category, p.price, oi.count AS total_quantity
+        FROM ORDERITEMS oi
         JOIN PRODUCTS p ON oi.product_id = p.product_id
         WHERE oi.order_id = %s
         """
@@ -65,10 +65,10 @@ class Meth:
         product_data = cursor.fetchall()
 
         query = """
-        SELECT products.product_type, SUM(order_items.quantity) AS total_quantity
-        FROM order_items
-        JOIN products ON order_items.product_id = products.product_id
-        GROUP BY products.product_type;
+        SELECT products.category, SUM(orderitems.count) AS total_quantity
+        FROM orderitems
+        JOIN products ON orderitems.product_id = products.product_id
+        GROUP BY products.category;
         """
         
         cursor.execute(query)
@@ -86,13 +86,13 @@ class Meth:
         quantities = [0] * 4  # Initialize with zeros for each type
 
         for item in self.product_data:
-            if item['product_type'] == 'Electronics':
+            if item['category'] == 'Electronics':
                 quantities[0] = item['total_quantity']
-            elif item['product_type'] == 'Clothing':
+            elif item['category'] == 'Clothing':
                 quantities[1] = item['total_quantity']
-            elif item['product_type'] == 'Automobile':
+            elif item['category'] == 'Automobile':
                 quantities[2] = item['total_quantity']
-            elif item['product_type'] == 'Staple':
+            elif item['category'] == 'Staple':
                 quantities[3] = item['total_quantity']
 
         graph_url = ''
@@ -127,12 +127,14 @@ class Meth:
                     product_id = product['product_id']
                     product_name = product['product_name']
                     total_quantity = product['total_quantity']
+                    total_price = product['total_quantity'] * product['price']
                     damaged_percent = random.randint(5, 11)
                     damaged_quantity = math.ceil(total_quantity * Decimal(damaged_percent) / Decimal(100))  # Convert damaged_percent to Decimal
                     damage_data.append({
                         'product_id' : product_id,
                         'product_name': product_name,
                         'total_quantity': total_quantity,
+                        'total_price' : total_price,
                         'damaged_quantity': damaged_quantity,
                         'damaged_percent': round(damaged_percent, 2)
                     })
@@ -140,9 +142,9 @@ class Meth:
 
                 for data in damage_data:
                     cursor.execute('''
-                        INSERT INTO final_product (order_id, product_id, product_name, total_quantity, damaged_quantity, damaged_percent)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    ''', (order_id, data['product_id'], data['product_name'], data['total_quantity'], data['damaged_quantity'], data['damaged_percent']))
+                        INSERT INTO final_product (order_id, product_id, product_name, total_quantity, total_price, damaged_quantity, damaged_percent)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ''', (order_id, data['product_id'], data['product_name'], data['total_quantity'], data['total_price'], data['damaged_quantity'], data['damaged_percent']))
 
                 if ds < 20:
                     cursor.execute("UPDATE ORDERS SET status = %s WHERE order_id = %s", ('Approved', order_id,))
@@ -152,7 +154,7 @@ class Meth:
                     connection.commit()
         else:
             cursor.execute('''
-            SELECT order_id, product_name, total_quantity, damaged_quantity, damaged_percent
+            SELECT order_id, product_name, total_quantity, total_price, damaged_quantity, damaged_percent
             FROM final_product
             WHERE order_id = %s
         ''', (order_id,))
@@ -162,6 +164,7 @@ class Meth:
                     'order_id': row['order_id'],
                     'product_name': row['product_name'],
                     'total_quantity': row['total_quantity'],
+                    'total_price' : row['total_price'],
                     'damaged_quantity': row['damaged_quantity'],
                     'damaged_percent': row['damaged_percent']
                 })
@@ -192,10 +195,10 @@ class BaseInventory:
 class USAInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO USA_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO USA_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
     def get_data(self):
         query = "SELECT DISTINCT * FROM USA_INV"
         self.cursor.execute(query)
@@ -203,10 +206,10 @@ class USAInventory(BaseInventory):
 class UKInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO UK_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO UK_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
     def get_data(self):
         query = "SELECT DISTINCT * FROM UK_INV"
         self.cursor.execute(query)
@@ -214,10 +217,10 @@ class UKInventory(BaseInventory):
 class FranceInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO FRANCE_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO FRANCE_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT * FROM FRANCE_INV"
@@ -226,10 +229,10 @@ class FranceInventory(BaseInventory):
 class GermanyInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO GERMANY_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO GERMANY_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'],  order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT * FROM GERMANY_INV"
@@ -238,10 +241,10 @@ class GermanyInventory(BaseInventory):
 class RussiaInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO RUSSIA_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO RUSSIA_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT * FROM RUSSIA_INV"
@@ -250,10 +253,10 @@ class RussiaInventory(BaseInventory):
 class ChennaiInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO CHENNAI_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO CHENNAI_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT * FROM CHENNAI_INV"
@@ -262,10 +265,10 @@ class ChennaiInventory(BaseInventory):
 class MumbaiInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO MUMBAI_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO MUMBAI_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT * FROM MUMBAI_INV"
@@ -274,10 +277,10 @@ class MumbaiInventory(BaseInventory):
 class DelhiInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO DELHI_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO DELHI_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT  * FROM DELHI_INV"
@@ -286,10 +289,10 @@ class DelhiInventory(BaseInventory):
 class KolkataInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO KOLKATA_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO KOLKATA_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
     def get_data(self):
         query = "SELECT DISTINCT * FROM KOLKATA_INV"
         self.cursor.execute(query)
@@ -297,10 +300,10 @@ class KolkataInventory(BaseInventory):
 class BangaloreInventory(BaseInventory):
     def insert_order(self, order):
         query = """
-        INSERT INTO BANGALORE_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, MODE_OF_TRANSPORT, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO BANGALORE_INV (CUSTOMER_ID, ORDER_ID, FROM_LOCATION, TO_LOCATION, ORDER_DATE, DELIVERY_DATE, PRODUCT_ID, PRODUCT_NAME, TOTAL_QUANTITY, DAMAGED_QUANTITY, COST) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['MODE_OF_TRANSPORT'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
+        self.cursor.execute(query, (order['CUSTOMER_ID'], order['ORDER_ID'], order['FROM_LOCATION'], order['TO_LOCATION'], order['ORDER_DATE'], order['DELIVERY_DATE'], order['PRODUCT_ID'], order['PRODUCT_NAME'], order['TOTAL_QUANTITY'], order['DAMAGED_QUANTITY'], order['COST']))
 
     def get_data(self):
         query = "SELECT DISTINCT * FROM BANGALORE_INV"
@@ -318,14 +321,13 @@ class InventoryManager:
             ORDERS.ORDER_ID, 
             ORDERS.FROM_LOCATION, 
             ORDERS.TO_LOCATION, 
-            ORDERS.MODE_OF_TRANSPORT, 
             ORDERS.ORDER_DATE, 
             ORDERS.DELIVERY_DATE, 
             FINAL_PRODUCT.PRODUCT_ID, 
             FINAL_PRODUCT.PRODUCT_NAME, 
-            FINAL_PRODUCT.TOTAL_QUANTITY, 
+            FINAL_PRODUCT.TOTAL_QUANTITY,
             FINAL_PRODUCT.DAMAGED_QUANTITY, 
-            ORDERS.COST
+            FINAL_PRODUCT.TOTAL_PRICE AS COST
         FROM CUSTOMERS
         JOIN ORDERS ON CUSTOMERS.CUSTOMER_ID = ORDERS.CUSTOMER_ID
         JOIN FINAL_PRODUCT ON ORDERS.ORDER_ID = FINAL_PRODUCT.ORDER_ID
@@ -465,7 +467,7 @@ class InventoryMonitor(Meth):
     
     def plot_inventory_pie(self):
         category_data = self.t[-1]
-        categories = [item['product_type'] for item in category_data]
+        categories = [item['category'] for item in category_data]
         quantities = [item['total_quantity'] for item in category_data]
         fig, ax = plt.subplots()
         ax.pie(quantities, labels=categories, autopct='%1.1f%%', startangle=90)
@@ -523,7 +525,7 @@ class Shipment():
         try:
             query = f"""
                 SELECT DISTINCT * 
-                FROM {table_name}
+                FROM {table_name} WHERE FROM_LOCATION = '{floc}'
             """
             cursor.execute(query)
             results = cursor.fetchall()

@@ -271,14 +271,16 @@
                         <th scope="col">Product Name</th>
                         <th scope="col">Product Type</th>
                         <th scope="col">Quantity</th>
+                        <th scope="col">Price</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in results %}
                     <tr>
                         <td>{{ item.product_name }}</td>
-                        <td>{{ item.product_type }}</td>
-                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.category }}</td>
+                        <td>{{ item.COUNT }}</td>
+                        <td>{{ item.PRICE * item.COUNT }}</td>
                     </tr>
                     {% endfor %}
                     <tr>
@@ -319,6 +321,7 @@
                             <tr>
                                 <th>Product Name</th>
                                 <th>Total Quantity</th>
+                                <th>Total Price</th>
                                 <th>Damaged Quantity</th>
                                 <th>Damaged (%)</th>
                             </tr>
@@ -328,6 +331,7 @@
                             <tr>
                                 <td>{{ damage.product_name }}</td>
                                 <td>{{ damage.total_quantity }}</td>
+                                <td>{{ damage.total_price }}</td>
                                 <td>{{ damage.damaged_quantity }}</td>
                                 <td>{{ damage.damaged_percent }}%</td>
                             </tr>
